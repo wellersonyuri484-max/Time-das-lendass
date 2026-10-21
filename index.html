@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>TIMES DAS LENDAS — Partida jogável</title>
+<style>
+:root{--gold:#efc75e;--ink:#080b0b;--grass:#167344}
+*{box-sizing:border-box}body{margin:0;background:#080a0b;color:#f8f5e9;font-family:Arial,sans-serif;touch-action:manipulation}
+main{max-width:950px;margin:auto;padding:12px}header{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}.brand{color:var(--gold);font-weight:900;letter-spacing:1.3px;font-size:clamp(15px,3vw,23px)}.small{font-size:11px;color:#a9aaa5;margin-top:4px}.pill{border:1px solid #6d5522;color:var(--gold);padding:8px 10px;border-radius:8px;font-size:12px}
+.scoreboard{display:flex;align-items:center;justify-content:space-around;background:linear-gradient(100deg,#171711,#111315);border:1px solid #5b4924;border-radius:10px;padding:10px;margin-bottom:9px}.team{text-align:center;font-weight:900;font-size:12px}.score{font-size:29px;color:var(--gold);font-weight:1000;letter-spacing:3px}.clock{text-align:center;color:#fff;font-size:15px;font-weight:bold}.clock small{display:block;color:#aaa;font-size:10px;margin-top:3px}
+canvas{display:block;width:100%;aspect-ratio:1.55/1;background:#167344;border:2px solid #e8e2cb;border-radius:7px;touch-action:none}
+.controls{display:grid;grid-template-columns:1fr 1.25fr;gap:12px;margin-top:12px;align-items:center}.pad{height:148px;position:relative;max-width:220px;width:100%;margin:auto;touch-action:none}.stick{position:absolute;width:56px;height:56px;border-radius:50%;background:#292d2c;border:2px solid #9d9d8b;left:50%;top:50%;transform:translate(-50%,-50%);box-shadow:0 0 0 17px #ffffff0b}.stick:after{content:"";position:absolute;inset:12px;border-radius:50%;background:#e8c15c88}.dpad-label{position:absolute;bottom:0;left:0;right:0;text-align:center;color:#aaa;font-size:10px}
+.action-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.action{border:1px solid #71602f;background:radial-gradient(circle at 30% 15%,#38321f,#17191a);border-radius:50%;aspect-ratio:1;max-width:94px;width:100%;justify-self:center;color:#f8df8c;font-weight:900;font-size:12px;touch-action:none;box-shadow:inset 0 0 0 3px #0005}.action:active,.action.on{background:#b18a32;color:#111}.wide{border:1px solid #444;background:#1b1d1f;color:#eee;padding:10px;border-radius:7px;font-weight:bold}.wide.gold{background:var(--gold);color:#17130a;border:0}
+.bottom{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:10px}.hint{text-align:center;color:#9fa19b;font-size:11px;line-height:1.5;margin:10px 0}.overlay{position:fixed;inset:0;background:#000b;display:flex;align-items:center;justify-content:center;padding:20px;z-index:5}.modal{max-width:400px;width:100%;background:#141614;border:1px solid #a17b2b;border-radius:14px;padding:22px;text-align:center}.modal h2{color:var(--gold)}.modal p{color:#c4c4bb;line-height:1.5;font-size:14px}.hide{display:none!important}
+@media(max-width:520px){main{padding:8px}.controls{gap:4px;grid-template-columns:.95fr 1.05fr}.pad{height:130px}.stick{width:50px;height:50px}.action{max-width:82px}.team{font-size:10px}.score{font-size:25px}.pill{font-size:10px;padding:7px}}
+</style>
+<style id="landscape-game-style">
+html, body { width:100%; height:100%; margin:0; overscroll-behavior:none; }
+body { -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
+button, select { touch-action:manipulation; }
+@media (orientation: portrait) {
+  body::before { content:"TIMES DAS LENDAS • GIRE O CELULAR"; position:fixed; inset:0; z-index:99999; background:#090b0a; color:#edc75a; display:flex; align-items:center; justify-content:center; text-align:center; padding:24px; font:bold 22px system-ui; letter-spacing:1px; }
+}
+@media (orientation: landscape) { body::before { content:none !important; display:none !important; } }
+</style>
+
+</head>
+<body><main>
+<header><div><div class="brand">⚽ TIMES DAS LENDAS</div><div class="small">VERSÃO 4 • PARTIDA 2D TESTÁVEL</div></div><div class="pill">◈ TL FC</div></header>
+<div class="scoreboard"><div class="team">🟨 TIMES<br>DAS LENDAS</div><div class="score"><span id="us">0</span> : <span id="them">0</span></div><div class="clock"><span id="time">10:00</span><small id="state">PRONTO PARA JOGAR</small></div><div class="team">RIVAIS<br>FC 🟥</div></div>
+<canvas id="field" width="900" height="580" aria-label="Campo de futebol jogável"></canvas>
+<div class="controls">
+<div class="pad" id="pad"><div class="stick" id="stick"></div><div class="dpad-label">MOVIMENTO</div></div>
+<div class="action-grid"><button class="action" id="pass">PASSE</button><button class="action" id="shoot">CHUTE</button><button class="action" id="sprint">CORRIDA</button><button class="action" id="switch">TROCAR</button></div>
+</div>
+<div class="bottom"><button class="wide gold" id="start">▶ INICIAR / PAUSAR</button><button class="wide" id="reset">REINICIAR PARTIDA</button><button class="wide" id="help">COMO JOGAR</button><button class="wide" id="clubBtn">MEU CLUBE</button><button class="wide" id="customClubBtn">PERSONALIZAR TIME</button><button class="wide" id="lineupBtn">ESCALAÇÃO</button></div>
+<div class="hint" id="hint">Use o controle virtual para mover o jogador dourado. PASSE, CHUTE e CORRIDA funcionam durante a partida.</div>
+</main>
+<div class="overlay" id="intro"><div class="modal"><div class="brand">TIMES DAS LENDAS</div><h2>É HORA DE JOGAR!</h2><p>Esta é uma demonstração jogável em 2D. Controle o jogador dourado, passe a bola e chute em direção ao gol adversário.</p><button class="wide gold" id="begin">ENTRAR EM CAMPO</button></div></div>
+<script>
+(()=>{
+const canvas=document.getElementById('field'),ctx=canvas.getContext('2d');
+const W=900,H=580;let running=false,clock=600,elapsed=0,last=0,us=0,them=0,selected=0,move={x:0,y:0},sprinting=false,keys={},message='PRONTO PARA JOGAR',kickCooldown=0;
+const homeStarts=[[115,290],[225,115],[225,235],[225,345],[225,465],[360,180],[360,400],[475,290],[585,150],[585,430],[680,290]];
+const awayStarts=[[785,290],[675,115],[675,235],[675,345],[675,465],[540,180],[540,400],[425,290],[315,150],[315,430],[220,290]];
+let home=[],away=[],ball={x:450,y:290,vx:0,vy:0,owner:0};
+function reset(){home=homeStarts.map((p,i)=>({x:p[0],y:p[1],sx:p[0],sy:p[1],team:0,i}));away=awayStarts.map((p,i)=>({x:p[0],y:p[1],sx:p[0],sy:p[1],team:1,i}));ball={x:450,y:290,vx:0,vy:0,owner:0};clock=600;elapsed=0;us=0;them=0;selected=0;running=false;message='PRONTO PARA JOGAR';ui();draw()}
+function ui(){document.getElementById('us').textContent=us;document.getElementById('them').textContent=them;document.getElementById('time').textContent=Math.floor(clock/60)+':'+String(Math.floor(clock%60)).padStart(2,'0');document.getElementById('state').textContent=message;document.getElementById('start').textContent=running?'Ⅱ PAUSAR':'▶ INICIAR / CONTINUAR'}
+function draw(){
+ctx.clearRect(0,0,W,H);
+for(let i=0;i<10;i++){ctx.fillStyle=i%2?'#197b47':'#167143';ctx.fillRect(0,i*H/10,W,H/10)}
+ctx.strokeStyle='#e8ead6';ctx.lineWidth=3;ctx.strokeRect(24,24,W-48,H-48);ctx.beginPath();ctx.moveTo(W/2,24);ctx.lineTo(W/2,H-24);ctx.stroke();ctx.beginPath();ctx.arc(W/2,H/2,72,0,Math.PI*2);ctx.stroke();
+ctx.strokeRect(24,170,110,240);ctx.strokeRect(W-134,170,110,240);ctx.strokeRect(24,220,48,140);ctx.strokeRect(W-72,220,48,140);ctx.beginPath();ctx.arc(W/2,H/2,4,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();
+ctx.fillStyle='#d5d4c4';ctx.fillRect(0,230,25,120);ctx.fillRect(W-25,230,25,120);
+for(const p of home)drawPlayer(p,0);for(const p of away)drawPlayer(p,1);
+ctx.beginPath();ctx.arc(ball.x,ball.y,10,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();ctx.strokeStyle='#222';ctx.lineWidth=2;ctx.stroke();ctx.beginPath();ctx.arc(ball.x,ball.y,4,0,Math.PI*2);ctx.fillStyle='#171717';ctx.fill();
+}
+function drawPlayer(p,team){ctx.beginPath();ctx.ellipse(p.x,p.y+11,13,6,0,0,Math.PI*2);ctx.fillStyle='#0005';ctx.fill();ctx.beginPath();ctx.arc(p.x,p.y,13,0,Math.PI*2);ctx.fillStyle=team?'#d83e38':'#e9bf4e';ctx.fill();ctx.lineWidth=p.i===selected&&team===0?4:2;ctx.strokeStyle=p.i===selected&&team===0?'#fff':'#151515';ctx.stroke();ctx.fillStyle=team?'#fff':'#18130a';ctx.font='bold 11px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(p.i===0?'G':String(p.i+1),p.x,p.y)}
+function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y)}
+function nearest(arr,b){return arr.reduce((best,p)=>dist(p,b)<dist(best,b)?p:best,arr[0])}
+function update(dt){
+if(!running)return;clock=Math.max(0,clock-dt);elapsed+=dt;kickCooldown=Math.max(0,kickCooldown-dt);
+let p=home[selected],speed=(sprinting?220:150)*dt;
+p.x+=move.x*speed;p.y+=move.y*speed;p.x=Math.max(40,Math.min(860,p.x));p.y=Math.max(40,Math.min(540,p.y));
+if(ball.owner===0&&dist(p,ball)<25){ball.x=p.x+15;ball.y=p.y+5}
+else if(ball.owner===1){const carrier=away[ball.carrier||0];if(carrier){carrier.x+=Math.sign(90-carrier.x)*35*dt;carrier.y+=Math.sin(elapsed*1.7)*20*dt;ball.x=carrier.x-14;ball.y=carrier.y}}
+else {ball.x+=ball.vx*dt;ball.y+=ball.vy*dt;ball.vx*=Math.pow(.985,dt*60);ball.vy*=Math.pow(.985,dt*60);if(ball.y<30||ball.y>550)ball.vy*=-.8;
+if(ball.x<25){if(ball.y>230&&ball.y<350){them++;kickoff(1);message='GOL DOS RIVAIS!'}else{ball.x=40;ball.vx=Math.abs(ball.vx)}}if(ball.x>875){if(ball.y>230&&ball.y<350){us++;kickoff(0);message='GOOOOL DO TL!'}else{ball.x=860;ball.vx=-Math.abs(ball.vx)}}}
+for(const a of away){if(ball.owner===0&&dist(a,ball)<22&&Math.random()<.012){ball.owner=1;ball.carrier=a.i;message='RIVAIS COM A BOLA';break}if(a.i!==0){const targetX=ball.owner===0?Math.max(480,ball.x+25):Math.max(400,ball.x);a.x+=(targetX-a.x)*dt*.18;a.y+=(ball.y-a.y)*dt*.12;a.x=Math.max(45,Math.min(855,a.x));a.y=Math.max(45,Math.min(535,a.y))}}
+for(const h of home){if(h.i!==selected){let tx=h.sx+(ball.x-450)*.07,ty=h.sy+(ball.y-290)*.07;h.x+=(tx-h.x)*dt*.7;h.y+=(ty-h.y)*dt*.7}}
+if(clock<=0){running=false;message='FIM DE JOGO';}
+ui();draw()
+}
+function kickoff(owner){ball.x=450;ball.y=290;ball.vx=ball.vy=0;ball.owner=owner;if(owner===1)ball.carrier=0;else ball.owner=0}
+function act(type){
+if(!running){message='Inicie a partida primeiro';ui();return}
+const p=home[selected];let hasBall=ball.owner===0&&dist(p,ball)<36;
+if(type==='pass'){if(hasBall){let mate=home.filter(q=>q.i!==selected).sort((a,b)=>dist(a,p)-dist(b,p))[0];ball.owner=-1;ball.x=p.x;ball.y=p.y;let d=Math.hypot(mate.x-p.x,mate.y-p.y)||1;ball.vx=(mate.x-p.x)/d*360;ball.vy=(mate.y-p.y)/d*360;message='PASSE!'}else{let q=nearest(home,ball);selected=q.i;message='Jogador selecionado'}}
+if(type==='shoot'){if(hasBall||dist(p,ball)<60){ball.owner=-1;ball.x=p.x;ball.y=p.y;ball.vx=650;ball.vy=(290-p.y)*.65+(Math.random()-.5)*90;message='CHUTE A GOL!'}else{message='Chegue perto da bola para chutar'}}
+if(type==='switch'){let q=nearest(home,ball);selected=q.i;message='Jogador '+(selected+1)+' selecionado'}
+ui();draw()
+}
+function loop(t){let dt=Math.min(.04,(t-last)/1000||0);last=t;update(dt);requestAnimationFrame(loop)}
+const pad=document.getElementById('pad'),stick=document.getElementById('stick');let pointer=null;
+function setMove(e){const r=pad.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;let dx=e.clientX-cx,dy=e.clientY-cy,len=Math.hypot(dx,dy),max=43;if(len>max){dx=dx/len*max;dy=dy/len*max}stick.style.left=`calc(50% + ${dx}px)`;stick.style.top=`calc(50% + ${dy}px)`;move={x:dx/max,y:dy/max}}
+pad.addEventListener('pointerdown',e=>{pointer=e.pointerId;pad.setPointerCapture(pointer);setMove(e)});pad.addEventListener('pointermove',e=>{if(pointer===e.pointerId)setMove(e)});function stopPad(){pointer=null;move={x:0,y:0};stick.style.left='50%';stick.style.top='50%'}pad.addEventListener('pointerup',stopPad);pad.addEventListener('pointercancel',stopPad);
+document.getElementById('pass').addEventListener('pointerdown',e=>{e.preventDefault();act('pass')});document.getElementById('shoot').addEventListener('pointerdown',e=>{e.preventDefault();act('shoot')});document.getElementById('switch').addEventListener('pointerdown',e=>{e.preventDefault();act('switch')});
+const sprint=document.getElementById('sprint');sprint.addEventListener('pointerdown',e=>{e.preventDefault();sprinting=true;sprint.classList.add('on')});['pointerup','pointercancel','pointerleave'].forEach(ev=>sprint.addEventListener(ev,()=>{sprinting=false;sprint.classList.remove('on')}));
+document.getElementById('start').onclick=()=>{if(clock<=0){reset()}running=!running;message=running?'EM JOGO':'PAUSADO';ui()};
+document.getElementById('reset').onclick=reset;document.getElementById('begin').onclick=()=>{document.getElementById('intro').classList.add('hide');running=true;message='EM JOGO';ui()};
+document.getElementById('help').onclick=()=>{document.getElementById('hint').textContent='MOVIMENTO: arraste o controle circular. PASSE: toque para passar ao companheiro mais próximo. CHUTE: aproxime-se da bola e chute em direção ao gol adversário da direita. CORRIDA: segure para correr. TROCAR: seleciona o jogador mais perto da bola.'};
+window.addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;move.x=(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0);move.y=(keys.s||keys.arrowdown?1:0)-(keys.w||keys.arrowup?1:0);if(e.key===' '){e.preventDefault();act('shoot')}if(e.key.toLowerCase()==='j')act('pass')});
+window.addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false;move.x=(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0);move.y=(keys.s||keys.arrowdown?1:0)-(keys.w||keys.arrowup?1:0)});
+reset();requestAnimationFrame(loop);
+})();
+</script>
+<section id="clubPanel" style="display:none;position:relative;margin:12px auto;padding:14px;max-width:1000px;background:#0b0e0d;border:1px solid #8b6a24;border-radius:14px;color:#f7f1df">
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
+    <div><div style="font-size:11px;letter-spacing:3px;color:#d7b348">CENTRO DE TREINAMENTO</div><h2 style="margin:4px 0;color:#f1cb61">MEU CLUBE</h2></div>
+    <button type="button" id="clubClose" class="wide">VOLTAR</button>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin:12px 0">
+    <div style="padding:10px;border-radius:8px;background:#1b1d19;border:1px solid #4e4327"><small style="color:#c9b875">NÍVEL DO CLUBE</small><div style="font-size:24px;font-weight:bold">1</div></div>
+    <div style="padding:10px;border-radius:8px;background:#1b1d19;border:1px solid #4e4327"><small style="color:#c9b875">MOEDAS DEMO</small><div id="clubCoins" style="font-size:24px;font-weight:bold">1.250</div></div>
+    <div style="padding:10px;border-radius:8px;background:#1b1d19;border:1px solid #4e4327"><small style="color:#c9b875">ESTÁDIO</small><div style="font-size:18px;font-weight:bold">Arena Dourada</div></div>
+  </div>
+  <h3 style="color:#e7c357;margin-bottom:8px">TREINAMENTO</h3>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:8px">
+    <button class="wide" type="button" data-train="Chute">⚽ Treinar chute</button>
+    <button class="wide" type="button" data-train="Passe">🎯 Treinar passe</button>
+    <button class="wide" type="button" data-train="Velocidade">💨 Treinar velocidade</button>
+  </div>
+  <p id="trainingStatus" style="color:#e7c357;font-size:12px">Escolha um treino demonstrativo. Os resultados são locais e não salvam progresso permanente.</p>
+  <h3 style="color:#e7c357">PRÓXIMAS MELHORIAS</h3>
+  <ul style="line-height:1.8;color:#c9c9bd"><li>Editar nome e escudo do clube</li><li>Personalizar uniforme preto e dourado</li><li>Construir estádio personalizado</li><li>Salvar elenco e progresso</li></ul>
+</section>
+
+<script>
+(function(){
+ const panel=document.getElementById('clubPanel');
+ const btn=document.getElementById('clubBtn');
+ if(btn && panel){
+   btn.addEventListener('click',()=>{panel.style.display='block';panel.scrollIntoView({behavior:'smooth',block:'start'});});
+   document.getElementById('clubClose').addEventListener('click',()=>panel.style.display='none');
+   let coins=1250;
+   document.querySelectorAll('[data-train]').forEach(b=>b.addEventListener('click',()=>{
+     const skill=b.getAttribute('data-train');
+     if(coins<100){document.getElementById('trainingStatus').textContent='Moedas demonstrativas insuficientes.';return;}
+     coins-=100;document.getElementById('clubCoins').textContent=coins.toLocaleString('pt-BR');
+     document.getElementById('trainingStatus').textContent='Treino de '+skill+' concluído! -100 moedas demonstrativas. (Demonstração)';
+   }));
+ }
+})();
+</script>
+
+<section id="customPanel" style="display:none;position:relative;margin:12px auto;padding:14px;max-width:1000px;background:#0b0e0d;border:1px solid #8b6a24;border-radius:14px;color:#f7f1df">
+ <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
+  <div><div style="font-size:11px;letter-spacing:3px;color:#d7b348">IDENTIDADE DO TIME</div><h2 style="margin:4px 0;color:#f1cb61">PERSONALIZAR CLUBE</h2></div>
+  <button type="button" id="customClose" class="wide">VOLTAR</button>
+ </div>
+ <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-top:12px">
+  <label style="font-size:12px;color:#d7b348">NOME DO CLUBE<input id="clubNameInput" maxlength="28" placeholder="Ex.: Lendas FC" style="box-sizing:border-box;width:100%;padding:10px;margin-top:5px;border-radius:7px;border:1px solid #62522b;background:#161917;color:#fff"></label>
+  <label style="font-size:12px;color:#d7b348">COR PRINCIPAL<select id="clubColorInput" style="box-sizing:border-box;width:100%;padding:10px;margin-top:5px;border-radius:7px;border:1px solid #62522b;background:#161917;color:#fff"><option value="gold">Dourado</option><option value="blue">Azul</option><option value="red">Vermelho</option><option value="white">Branco</option></select></label>
+  <label style="font-size:12px;color:#d7b348">ESCUDO<select id="clubBadgeInput" style="box-sizing:border-box;width:100%;padding:10px;margin-top:5px;border-radius:7px;border:1px solid #62522b;background:#161917;color:#fff"><option value="🛡️">Escudo</option><option value="⭐">Estrela</option><option value="🦁">Leão</option><option value="🐉">Dragão</option><option value="🔥">Chama</option></select></label>
+ </div>
+ <div id="clubPreview" style="margin:14px 0;padding:15px;border:1px solid #514323;border-radius:10px;background:#171916;text-align:center"><div id="clubBadgePreview" style="font-size:42px">🛡️</div><strong id="clubNamePreview" style="font-size:20px;color:#efc75e">TIMES DAS LENDAS</strong><div style="font-size:11px;color:#aaa;letter-spacing:2px">FUTEBOL • HONRA • LENDAS</div></div>
+ <button type="button" id="saveClub" class="wide">SALVAR PERSONALIZAÇÃO</button>
+ <p id="customStatus" style="color:#e7c357;font-size:12px">A personalização é salva neste navegador, quando o armazenamento estiver disponível.</p>
+</section>
+
+<script>
+(function(){
+ const panel=document.getElementById('customPanel'), btn=document.getElementById('customClubBtn');
+ if(!panel||!btn)return;
+ const name=document.getElementById('clubNameInput'), color=document.getElementById('clubColorInput'), badge=document.getElementById('clubBadgeInput');
+ const namePreview=document.getElementById('clubNamePreview'), badgePreview=document.getElementById('clubBadgePreview'), status=document.getElementById('customStatus');
+ const colors={gold:'#efc75e',blue:'#70b8ff',red:'#ff7777',white:'#ffffff'};
+ function preview(){namePreview.textContent=name.value.trim()||'TIMES DAS LENDAS';namePreview.style.color=colors[color.value]||colors.gold;badgePreview.textContent=badge.value;}
+ [name,color,badge].forEach(el=>el.addEventListener('input',preview));
+ btn.addEventListener('click',()=>{
+  panel.style.display='block';
+  try{const saved=JSON.parse(localStorage.getItem('tdlClub')||'{}');name.value=saved.name||'';color.value=saved.color||'gold';badge.value=saved.badge||'🛡️';}catch(e){}
+  preview();panel.scrollIntoView({behavior:'smooth',block:'start'});
+ });
+ document.getElementById('customClose').addEventListener('click',()=>panel.style.display='none');
+ document.getElementById('saveClub').addEventListener('click',()=>{
+  const data={name:name.value.trim().slice(0,28),color:color.value,badge:badge.value};
+  try{localStorage.setItem('tdlClub',JSON.stringify(data));status.textContent='Personalização salva neste navegador!';}
+  catch(e){status.textContent='Não foi possível salvar neste navegador; os dados aparecem apenas nesta sessão.';}
+  preview();
+ });
+})();
+</script>
+
+<section id="lineupPanel" style="display:none;position:relative;margin:12px auto;padding:14px;max-width:1000px;background:#0b0e0d;border:1px solid #8b6a24;border-radius:14px;color:#f7f1df">
+ <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
+  <div><div style="font-size:11px;letter-spacing:3px;color:#d7b348">GESTÃO DA EQUIPE</div><h2 style="margin:4px 0;color:#f1cb61">ESCALAÇÃO</h2></div>
+  <button type="button" id="lineupClose" class="wide">VOLTAR</button>
+ </div>
+ <div style="display:grid;grid-template-columns:minmax(0,1.2fr) minmax(130px,.8fr);gap:12px;margin-top:12px">
+  <div style="position:relative;min-height:320px;border:2px solid #d8c58b;border-radius:10px;background:repeating-linear-gradient(0deg,#1b6437 0px,#1b6437 42px,#205f35 42px,#205f35 84px);overflow:hidden">
+   <div style="position:absolute;inset:10px;border:1px solid #b7d9ad;border-radius:4px;pointer-events:none"></div>
+   <div style="position:absolute;top:50%;left:10px;right:10px;border-top:1px solid #b7d9ad"></div>
+   <div style="position:absolute;top:calc(50% - 32px);left:calc(50% - 32px);width:64px;height:64px;border:1px solid #b7d9ad;border-radius:50%"></div>
+   <div id="fieldPlayers" style="position:absolute;inset:8px"></div>
+  </div>
+  <div>
+   <label style="font-size:12px;color:#d7b348">FORMAÇÃO<select id="lineupFormation" style="width:100%;padding:9px;margin:5px 0 12px;background:#161917;color:#fff;border:1px solid #62522b;border-radius:6px"><option>4-3-3</option><option>4-4-2</option><option>3-5-2</option><option>4-2-3-1</option></select></label>
+   <h3 style="margin:0 0 6px;color:#e7c357;font-size:14px">JOGADORES</h3>
+   <div id="lineupRoster" style="display:grid;gap:5px"></div>
+   <p id="lineupStatus" style="font-size:11px;color:#d9c783">Titulares: 11</p>
+  </div>
+ </div>
+ <p style="font-size:11px;color:#aaa">Protótipo: selecione um jogador da lista para destacar no campo. A escalação ainda não altera a lógica da partida.</p>
+</section>
+
+<script>
+(function(){
+ const btn=document.getElementById('lineupBtn'), panel=document.getElementById('lineupPanel');
+ if(!btn||!panel)return;
+ const roster=[
+  ['GK','Davi Rocha',82],['LD','Caio Silva',78],['ZAG','Bruno Reis',84],['ZAG','Luan Costa',81],['LE','Ícaro Alves',79],
+  ['VOL','Rafael Lima',83],['MC','Theo Martins',85],['MC','Enzo Carvalho',80],['PD','Nicolas Souza',86],['CA','Gabriel Mendes',88],['PE','Lucas Ferreira',84],
+  ['RES','Mateus Nunes',75],['RES','Pedro Barros',77],['RES','André Melo',76],['RES','Vitor Azevedo',81]
+ ];
+ const pos=[ [50,91],[18,75],[39,78],[61,78],[82,75],[35,54],[50,60],[65,54],[20,28],[50,18],[80,28] ];
+ const field=document.getElementById('fieldPlayers'), list=document.getElementById('lineupRoster'), status=document.getElementById('lineupStatus');
+ let selected=0;
+ function render(){
+   field.innerHTML='';
+   roster.slice(0,11).forEach((p,i)=>{
+    const el=document.createElement('button');el.type='button';
+    el.style.cssText='position:absolute;left:'+pos[i][0]+'%;top:'+pos[i][1]+'%;transform:translate(-50%,-50%);width:35px;height:35px;border-radius:50%;border:2px solid '+(selected===i?'#fff':'#efc75e')+';background:'+(selected===i?'#e7c357':'#101311')+';color:'+(selected===i?'#111':'#fff')+';font-size:10px;font-weight:bold;padding:0';
+    el.textContent=p[0];el.title=p[1];el.addEventListener('click',()=>{selected=i;render()});field.appendChild(el);
+   });
+   list.innerHTML='';
+   roster.forEach((p,i)=>{
+    const b=document.createElement('button');b.type='button';
+    b.style.cssText='padding:7px;text-align:left;background:'+(i===selected?'#443719':'#191b1b')+';border:1px solid '+(i===selected?'#efc75e':'#454545')+';border-radius:6px;color:#fff;font-size:11px';
+    b.textContent=(i<11?'TIT ':'RES ')+p[1]+' · '+p[2];
+    b.addEventListener('click',()=>{selected=i<11?i:selected;status.textContent=i<11?'Selecionado: '+p[1]+' (titular)':'Reserva selecionado: '+p[1]+'. Trocas reais ainda não estão implementadas.';render()});list.appendChild(b);
+   });
+   status.textContent='Titulares: 11 · Selecionado: '+roster[selected][1];
+ }
+ btn.addEventListener('click',()=>{panel.style.display='block';panel.scrollIntoView({behavior:'smooth',block:'start'});render()});
+ document.getElementById('lineupClose').addEventListener('click',()=>panel.style.display='none');
+ document.getElementById('lineupFormation').addEventListener('change',e=>{status.textContent='Formação selecionada: '+e.target.value+' (posições demonstrativas)';});
+})();
+</script>
+</body></html>
